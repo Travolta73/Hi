@@ -1,0 +1,193 @@
+import java.lang.StringBuilder;
+
+class App {
+
+    public static void main(String[] args) {
+        StringBuilder welcomeMsg = new StringBuilder();
+        welcomeMsg.append("\n\n-----------------------------------------------------\n\n")
+            .append("               Консольный калькулятор                 \n")
+            .append("-----------------------------------------------------\n\n")
+            .append("Для запуска ведите выражение, состоящее из двух чисел\n")
+            .append("Это могут быть арабские или латинские цифры oт 1 до 10\n")
+            .append("Примером может служить выражение 2+2\n")
+            .append("Для запуска нажмите Enter\n")
+            .append("Для выхода \"")
+            .append(ReadOperation.EXIT_CHARACTER)
+            .append("\"\n");
+        System.out.println(welcomeMsg);
+
+        ReadOperation reader = new ReadOperation();
+        while (reader.isWaitOperation()) {
+            MyExpression myExpression = null;
+            try {
+                myExpression = reader.read();
+            } catch (RuntimeException e) {
+                System.err.println(e.getMessage());
+                continue;
+            }
+
+            Calculator.calculate(myExpression);
+        }
+        System.out.println("В выражении пристутствует знак выхода: " + ReadOperation.EXIT_CHARACTER);
+        System.out.println("Завершение программы.");
+    }
+}
+
+class Calculator {
+    private Calculator() {
+    }
+
+    public static void calculate(MyExpression myExpression) {
+        ScriptEngineManager mgr = new ScriptEngineManager();
+        ScriptEngine engine = mgr.getEngineByName("JavaScript");
+        String foo = myExpression.toString();
+        String result = null;
+        try {
+            System.out.println("Результат : " + engine.eval(foo));
+        } catch(ScriptException e) {
+            e.printStackTrace();
+        }
+    }
+}
+
+public class ExpressionException extends Exception {
+    /** We are inherited from an exception */
+    public ExpressionException(String str) {
+        super(str);
+    }
+}
+
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
+import java.util.Map;
+import java.util.HashMap;
+
+public class MyExpression {
+    public static final Pattern REGX = Pattern.compile("[+-/*]{1}");
+    private static Map<String, String> availabelNumbers;
+
+    static {
+        availabelNumbers = new HashMap<String, String>();
+        for (int i = 1; i < 11; i++) {
+            String str = String.valueOf(i);
+            availabelNumbers.put(str, str);
+        }
+        availabelNumbers.put("I", "1");
+        availabelNumbers.put("II", "2");
+        availabelNumbers.put("III", "3"); 
+        availabelNumbers.put("IV", "4"); 
+        availabelNumbers.put("V", "5"); 
+        availabelNumbers.put("VI", "6"); 
+        availabelNumbers.put("VII", "7"); 
+        availabelNumbers.put("VIII", "8"); 
+        availabelNumbers.put("IX", "9"); 
+        availabelNumbers.put("X", "10"); 
+    }
+
+    private String operand1;
+    private String operand2;
+    private String operation;
+
+
+    public MyExpression(String line) 
+            throws ExpressionException {
+
+        String[] operands = line.split(REGX.toString());
+        if (operands.length != 2) {
+            throw new ExpressionException("Операция не является допустимой");
+        }
+        String operation = String.valueOf(line.charAt(operands[0].length()));
+        setOperation(operation);
+        setOperand1(operands[0]);
+        setOperand2(operands[1]);
+    }
+
+    public String getOperand1() {
+        return operand1;
+    }
+
+    public void setOperand1(String operand) 
+            throws ExpressionException {
+        if (!isAvailabelNumber(operand)) {
+            throw new ExpressionException("Операнд1 не является числом");
+        }
+        this.operand1 = operand;
+    }
+
+    public String getOperand2() {
+        return operand2;
+    }
+
+    public void setOperand2(String operand) 
+        throws ExpressionException {
+        if (!isAvailabelNumber(operand)) {
+            throw new ExpressionException("Операнд2 не является числом");
+        }
+        this.operand2 = operand;
+    }
+
+    public String getOperation() {
+        return operation;
+    }
+
+    public void setOperation(String operation) 
+            throws ExpressionException{
+        if (!isAvailabelOperation(operation)) {
+            throw new ExpressionException("Операция не является допустимой");
+        }
+        this.operation = operation;
+    }
+
+    @Override
+    public String toString() {
+        return getOperand1() + getOperation() + getOperand2();
+    }
+
+    private boolean isAvailabelOperation(String operation) {
+        return operation.matches(REGX.toString());
+    }
+
+    private boolean isAvailabelNumber(String number) {
+        String availabelNumber = availabelNumbers.get(number);
+        return availabelNumber != null;
+    }
+}
+
+import java.util.Scanner;
+
+class ReadOperation {
+
+    public static final char EXIT_CHARACTER = '!';
+    private boolean exit = false;
+
+
+    public MyExpression read() {
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("          : ");
+
+        String line = scanner.nextLine();
+
+        if (checkExit(line)) {
+            return null;
+        }
+
+        try {
+            return new MyExpression(line);
+        } catch (ExpressionException e) {
+            throw new IllegalArgumentException("Неверный формат данных. " +
+                    e.getMessage());
+        }
+    }
+
+    public boolean isWaitOperation() {
+        return !exit;
+    }
+
+    private boolean checkExit(String line) {
+        exit = line.indexOf(EXIT_CHARACTER) != -1;
+        return exit;
+    }
+}
+
+
+
